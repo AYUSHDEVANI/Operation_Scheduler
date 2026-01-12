@@ -53,28 +53,7 @@ const Doctors = () => {
       alert('Error saving doctor');
     }
   };
-    // ... inside return ...
-            <div>
-              <label className="block text-gray-700">Specialization</label>
-              <input 
-                type="text" 
-                className="w-full border rounded px-3 py-2" 
-                required
-                value={formData.specialization}
-                onChange={(e) => setFormData({...formData, specialization: e.target.value})}
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700">Department</label>
-              <input 
-                type="text" 
-                className="w-full border rounded px-3 py-2" 
-                required
-                placeholder="e.g. Cardiology"
-                value={formData.department}
-                onChange={(e) => setFormData({...formData, department: e.target.value})}
-              />
-            </div>
+
 
   if (loading) return <div>Loading...</div>;
 

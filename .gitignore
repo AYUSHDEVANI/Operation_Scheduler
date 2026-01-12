@@ -9,7 +9,7 @@ dist/
 build/
 
 # Backend specific
-backend/logs/
+backend/logs/*.log
 backend/uploads/
 
 # OS specific

@@ -5,7 +5,7 @@ const Doctors = () => {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', specialization: '', contactNumber: '', email: '' });
+  const [formData, setFormData] = useState({ name: '', specialization: '', department: '', contactNumber: '', email: '' });
 
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,7 +30,9 @@ const Doctors = () => {
     setFormData({
       name: doctor.name,
       specialization: doctor.specialization,
-      contactNumber: doctor.contactNumber
+      department: doctor.department,
+      contactNumber: doctor.contactNumber,
+      email: doctor.email
     });
     setShowForm(true);
   };
@@ -45,12 +47,34 @@ const Doctors = () => {
         await API.post('/doctors', formData);
       }
       setShowForm(false);
-      setFormData({ name: '', specialization: '', contactNumber: '' });
+      setFormData({ name: '', specialization: '', department: '', contactNumber: '', email: '' });
       fetchDoctors();
     } catch (error) {
       alert('Error saving doctor');
     }
   };
+    // ... inside return ...
+            <div>
+              <label className="block text-gray-700">Specialization</label>
+              <input 
+                type="text" 
+                className="w-full border rounded px-3 py-2" 
+                required
+                value={formData.specialization}
+                onChange={(e) => setFormData({...formData, specialization: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700">Department</label>
+              <input 
+                type="text" 
+                className="w-full border rounded px-3 py-2" 
+                required
+                placeholder="e.g. Cardiology"
+                value={formData.department}
+                onChange={(e) => setFormData({...formData, department: e.target.value})}
+              />
+            </div>
 
   if (loading) return <div>Loading...</div>;
 
@@ -70,7 +94,7 @@ const Doctors = () => {
             onClick={() => {
               setShowForm(!showForm);
               setEditingId(null);
-              setFormData({ name: '', specialization: '', contactNumber: '', email: '' });
+              setFormData({ name: '', specialization: '', department: '', contactNumber: '', email: '' });
             }}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >

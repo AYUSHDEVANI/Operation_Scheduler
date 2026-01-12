@@ -128,6 +128,17 @@ const Doctors = () => {
               />
             </div>
             <div>
+              <label className="block text-gray-700">Department</label>
+              <input 
+                type="text" 
+                className="w-full border rounded px-3 py-2" 
+                required
+                placeholder="e.g. Cardiology"
+                value={formData.department}
+                onChange={(e) => setFormData({...formData, department: e.target.value})}
+              />
+            </div>
+            <div>
               <label className="block text-gray-700">Contact Number</label>
               <input 
                 type="text" 

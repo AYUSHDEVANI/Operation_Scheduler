@@ -19,6 +19,7 @@ Modal.setAppElement('#root'); // Accessibility
 const SurgeryScheduler = () => {
   const [events, setEvents] = useState([]);
   const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [editingSurgeryId, setEditingSurgeryId] = useState(null);
   const [doctors, setDoctors] = useState([]);
   const [patients, setPatients] = useState([]);
   const [ots, setOTs] = useState([]);
@@ -121,13 +122,19 @@ const SurgeryScheduler = () => {
     validationSchema,
     onSubmit: async (values) => {
       try {
-        await API.post('/surgeries', values);
-        toast.success('Surgery Scheduled Successfully');
+        if (editingSurgeryId) {
+            await API.put(`/surgeries/${editingSurgeryId}`, values);
+            toast.success('Surgery Updated Successfully');
+        } else {
+            await API.post('/surgeries', values);
+            toast.success('Surgery Scheduled Successfully');
+        }
         setModalIsOpen(false);
+        setEditingSurgeryId(null); // Reset
         formik.resetForm();
-        fetchData(); // Refresh calendar
+        fetchData(); 
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Scheduling Failed');
+        toast.error(error.response?.data?.message || 'Operation Failed');
       }
     }
   });
@@ -199,12 +206,43 @@ const SurgeryScheduler = () => {
     fetchTracking(event.id);
   };
 
-  const handleDeleteSurgery = async () => {
+  const handleEditSurgery = () => {
+    if (!selectedEvent) return;
+    const s = selectedEvent.resource;
+    setEditingSurgeryId(selectedEvent.id); // Set ID
+    formik.setValues({
+      patient: s.patient._id,
+      doctor: s.doctor._id,
+      operationTheatre: s.operationTheatre._id,
+      date: moment(s.startDateTime).format('YYYY-MM-DD'),
+      startTime: moment(s.startDateTime).format('HH:mm'),
+      endTime: moment(s.endDateTime).format('HH:mm'),
+      priority: s.priority || 'Normal',
+      anesthesiaType: s.anesthesiaType || ''
+    });
+    setDetailsModalIsOpen(false);
+    setModalIsOpen(true);
+  };
+
+  const handleCompleteSurgery = async () => {
+      if (!selectedEvent) return;
+      try {
+          await API.put(`/surgeries/${selectedEvent.id}`, { status: 'Completed' });
+          toast.success('Surgery Marked Completed');
+          setDetailsModalIsOpen(false);
+          fetchData();
+      } catch (error) {
+          toast.error('Failed to update status');
+      }
+  };
+
+  const handleCancelSurgery = async () => {
     if (!selectedEvent) return;
     if (!window.confirm(`Are you sure you want to cancel surgery for ${selectedEvent.title}?`)) return;
 
     try {
-      await API.delete(`/surgeries/${selectedEvent.id}`);
+      // Soft Delete (Status Update) preferred over Delete
+      await API.put(`/surgeries/${selectedEvent.id}`, { status: 'Cancelled' });
       toast.success('Surgery Cancelled');
       setDetailsModalIsOpen(false);
       fetchData();
@@ -213,12 +251,55 @@ const SurgeryScheduler = () => {
     }
   };
 
+  const eventStyleGetter = (event, start, end, isSelected) => {
+    let backgroundColor = '#3B82F6'; // Default Blue (Scheduled)
+    const status = event.resource.status;
+    const priority = event.resource.priority;
+
+    if (status === 'Cancelled') {
+        backgroundColor = '#9CA3AF'; // Gray (Cancelled) - distinct from error red
+        // Or keep it Red if user prefers "Alert". Let's use Gray for "inactive/cancelled" or Red for "Action needed"?
+        // Usually Cancelled = Gray/Crossed out. Let's use a Dark Grayish-Red or just Gray. 
+        // User said "reflect to dashboard", implying they want to see it. 
+        backgroundColor = '#6B7280'; 
+    } else if (status === 'Completed') {
+        backgroundColor = '#10B981'; // Green
+    } else if (status === 'Rescheduled') {
+        backgroundColor = '#F59E0B'; // Amber
+    }
+
+    // Emergency Override for Active Surgeries
+    if (priority === 'Emergency' && status !== 'Cancelled' && status !== 'Completed') {
+        backgroundColor = '#EF4444'; // Red
+    }
+
+    const style = {
+        backgroundColor,
+        borderRadius: '4px',
+        opacity: 0.9,
+        color: 'white',
+        border: '0px',
+        display: 'block',
+        textDecoration: status === 'Cancelled' ? 'line-through' : 'none'
+    };
+
+    return { style };
+  };
+
   return (
     <div className="h-screen flex flex-col p-4 bg-gray-50">
       <Toaster />
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-gray-800">Surgery Scheduler</h2>
         <div className="flex gap-2">
+           {/* Legend */}
+           <div className="flex items-center gap-3 mr-4 text-sm hidden md:flex">
+                <div className="flex items-center gap-1"><span className="w-3 h-3 bg-blue-500 rounded-full"></span> Scheduled</div>
+                <div className="flex items-center gap-1"><span className="w-3 h-3 bg-red-500 rounded-full"></span> Emergency</div>
+                <div className="flex items-center gap-1"><span className="w-3 h-3 bg-green-500 rounded-full"></span> Completed</div>
+                <div className="flex items-center gap-1"><span className="w-3 h-3 bg-gray-500 rounded-full"></span> Cancelled</div>
+           </div>
+
             <button 
                 onClick={handleDownloadPDF} 
                 className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 shadow-md transition-all flex items-center gap-2"
@@ -229,7 +310,11 @@ const SurgeryScheduler = () => {
                 Export Schedule
             </button>
             <button 
-              onClick={() => setModalIsOpen(true)}
+              onClick={() => {
+                  setModalIsOpen(true);
+                  setEditingSurgeryId(null);
+                  formik.resetForm();
+              }}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             >
               Schedule New Surgery
@@ -245,6 +330,7 @@ const SurgeryScheduler = () => {
           endAccessor="end"
           style={{ height: 600 }}
           onSelectEvent={handleEventSelect}
+          eventPropGetter={eventStyleGetter}
         />
       </div>
 
@@ -288,12 +374,34 @@ const SurgeryScheduler = () => {
                         </span>
                     </p>
                     <div className="mt-6 flex justify-end space-x-2">
-                        <button 
-                            onClick={handleDeleteSurgery}
-                            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                        {/* Edit Button - Always visible or maybe hide for Cancelled? Let's keep it visible for rescheduling */}
+                         <button 
+                            onClick={handleEditSurgery}
+                            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
                         >
-                            Cancel Surgery
+                            Edit
                         </button>
+
+                        {/* Complete Button - Hide if already Completed or Cancelled */}
+                        {selectedEvent.resource.status !== 'Completed' && selectedEvent.resource.status !== 'Cancelled' && (
+                            <button 
+                                onClick={handleCompleteSurgery}
+                                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                            >
+                                Complete
+                            </button>
+                        )}
+
+                        {/* Cancel Button - Hide if already Cancelled or Completed */}
+                         {selectedEvent.resource.status !== 'Cancelled' && selectedEvent.resource.status !== 'Completed' && (
+                            <button 
+                                onClick={handleCancelSurgery}
+                                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                            >
+                                Cancel
+                            </button>
+                        )}
+
                         <button 
                             onClick={() => setDetailsModalIsOpen(false)}
                             className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400"
@@ -423,7 +531,7 @@ const SurgeryScheduler = () => {
         className="relative bg-white p-8 rounded shadow-lg w-full max-w-lg outline-none max-h-[90vh] overflow-y-auto z-50"
         overlayClassName="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
       >
-        <h2 className="text-xl font-bold mb-4">Schedule Surgery</h2>
+        <h2 className="text-xl font-bold mb-4">{editingSurgeryId ? 'Edit Surgery' : 'Schedule Surgery'}</h2>
         <form onSubmit={formik.handleSubmit} className="space-y-4">
           
           {/* Patient Selection */}

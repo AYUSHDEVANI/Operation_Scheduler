@@ -225,7 +225,7 @@ const deleteSurgery = async (req, res) => {
             sendSurgeryNotification(surgery.patient.email, {
                 patientName: surgery.patient.name,
                 doctorName: surgery.doctor ? surgery.doctor.name : 'Doctor',
-                date: moment(surgery.date).format('YYYY-MM-DD'), // Assuming moment or string
+                date: surgery.date.toISOString().split('T')[0],
             }, 'CANCELLED');
         }
 

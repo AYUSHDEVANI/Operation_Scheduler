@@ -6,18 +6,18 @@ const logger = require('../logs/logger');
 // @access  Public (or Protected) - Let's make it Protected
 const getDoctors = async (req, res) => {
   try {
-    const { search } = req.query;
-    let query = {};
-    if (search) {
-      query = {
-        $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { specialization: { $regex: search, $options: 'i' } }
-        ]
-      };
-    }
-    const doctors = await Doctor.find(query);
-    res.json(doctors);
+     const { page = 1, limit = 10 } = req.query;
+     const count = await Doctor.countDocuments({});
+     const doctors = await Doctor.find({})
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+      
+    res.json({
+        doctors,
+        totalPages: Math.ceil(count / limit),
+        currentPage: Number(page),
+        totalDoctors: count
+    });
   } catch (error) {
     logger.error(`Get Doctors Error: ${error.message}`);
     res.status(500).json({ message: 'Server Error' });

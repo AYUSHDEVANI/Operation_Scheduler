@@ -18,10 +18,10 @@ const logger = winston.createLogger({
       )
     }),
     // File log
-    new winston.transports.File({ 
-      filename: path.join(__dirname, 'app.log'), 
-      level: 'info' 
-    })
+    // new winston.transports.File({ 
+    //   filename: path.join(__dirname, 'app.log'), 
+    //   level: 'info' 
+    // })
   ]
 });
 

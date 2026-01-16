@@ -1,0 +1,32 @@
+services:
+  # Backend Service (Docker)
+  - type: web
+    name: hospital-backend
+    env: docker
+    dockerContext: ./backend
+    plan: free
+    region: singapore
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false # User enters this in Dashboard to keep secret
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+
+  # Frontend Service (Static Site)
+  - type: static
+    name: hospital-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    plan: free
+    region: singapore
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: hospital-backend
+          property: url

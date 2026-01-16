@@ -64,24 +64,24 @@ const Resources = () => {
       </div>
 
       {showForm && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <h3 className="text-xl font-semibold mb-4">Add New Resource</h3>
+        <div className="bg-surface p-6 rounded-xl shadow-md mb-6 border border-gray-100">
+          <h3 className="text-xl font-semibold mb-4 text-charcoal">Add New Resource</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <label className="block text-gray-700">Item Name</label>
+                <label className="block text-sm font-medium text-secondary mb-1">Item Name</label>
                 <input 
                   type="text" 
-                  className="w-full border rounded px-3 py-2" 
+                  className="w-full border rounded px-3 py-2 focus:ring-primary focus:border-primary" 
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-gray-700">Type</label>
+                <label className="block text-sm font-medium text-secondary mb-1">Type</label>
                 <select
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-2 focus:ring-primary focus:border-primary bg-surface"
                   value={formData.type}
                   onChange={(e) => setFormData({...formData, type: e.target.value})}
                 >
@@ -92,57 +92,57 @@ const Resources = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-gray-700">Quantity</label>
+                <label className="block text-sm font-medium text-secondary mb-1">Quantity</label>
                 <input 
                   type="number" 
-                  className="w-full border rounded px-3 py-2" 
+                  className="w-full border rounded px-3 py-2 focus:ring-primary focus:border-primary" 
                   required
                   value={formData.quantity}
                   onChange={(e) => setFormData({...formData, quantity: Number(e.target.value)})}
                 />
               </div>
               <div>
-                <label className="block text-gray-700">Unit</label>
+                <label className="block text-sm font-medium text-secondary mb-1">Unit</label>
                 <input 
                   type="text" 
                   placeholder="e.g. mg, pcs"
-                  className="w-full border rounded px-3 py-2" 
+                  className="w-full border rounded px-3 py-2 focus:ring-primary focus:border-primary" 
                   value={formData.unit}
                   onChange={(e) => setFormData({...formData, unit: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-gray-700">Low Stock Alert Limit</label>
+                <label className="block text-sm font-medium text-secondary mb-1">Low Stock Alert Limit</label>
                 <input 
                   type="number" 
-                  className="w-full border rounded px-3 py-2" 
+                  className="w-full border rounded px-3 py-2 focus:ring-primary focus:border-primary" 
                   value={formData.lowStockThreshold}
                   onChange={(e) => setFormData({...formData, lowStockThreshold: Number(e.target.value)})}
                 />
               </div>
              </div>
-            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Save Item</button>
+            <button type="submit" className="bg-success text-surface px-4 py-2 rounded hover:brightness-110 font-medium">Save Item</button>
           </form>
         </div>
       )}
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="bg-surface shadow-md rounded-lg overflow-hidden border border-gray-100">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Stock</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Status</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-surface divide-y divide-gray-200">
               {resources.map((item) => (
                 <tr key={item._id}>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{item.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{item.type}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap font-medium text-charcoal">{item.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-charcoal">{item.type}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-charcoal">
                       {item.quantity} {item.unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

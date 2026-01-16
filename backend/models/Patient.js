@@ -22,6 +22,11 @@ const patientSchema = new mongoose.Schema({
       type: String,
       // unique: true // Optional, depending on if we want strict uniqueness
   },
+  assignedDoctor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Doctor',
+    required: false
+  },
   medicalHistory: [{
     condition: String,
     diagnosedDate: Date,

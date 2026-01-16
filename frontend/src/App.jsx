@@ -30,19 +30,19 @@ function App() {
              } />
              
              <Route path="doctors" element={
-                <ProtectedRoute adminOnly={true}>
+                <ProtectedRoute allowedRoles={['ADMIN']}>
                   <Doctors />
                 </ProtectedRoute>
              } />
 
              <Route path="patients" element={
-                <ProtectedRoute adminOnly={true}>
+                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR']}>
                   <Patients />
                 </ProtectedRoute>
              } />
             
              <Route path="ots" element={
-                <ProtectedRoute adminOnly={true}>
+                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR']}>
                   <OTs />
                 </ProtectedRoute>
              } />
@@ -54,13 +54,13 @@ function App() {
              } />
 
              <Route path="resources" element={
-                <ProtectedRoute adminOnly={true}>
+                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR']}>
                   <Resources />
                 </ProtectedRoute>
              } />
 
              <Route path="reports" element={
-                <ProtectedRoute adminOnly={true}>
+                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR']}>
                   <Reports />
                 </ProtectedRoute>
              } />

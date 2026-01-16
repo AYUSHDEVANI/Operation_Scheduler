@@ -62,5 +62,10 @@ const surgerySchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// Indexes for performance optimization on conflict checks
+surgerySchema.index({ doctor: 1, startDateTime: 1, endDateTime: 1 });
+surgerySchema.index({ operationTheatre: 1, startDateTime: 1, endDateTime: 1 });
+surgerySchema.index({ status: 1 }); // Useful for stats
+
 const Surgery = mongoose.model('Surgery', surgerySchema);
 module.exports = Surgery;

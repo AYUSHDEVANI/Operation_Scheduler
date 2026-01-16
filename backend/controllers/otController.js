@@ -1,4 +1,5 @@
 const OperationTheatre = require('../models/OperationTheatre');
+const Surgery = require('../models/Surgery'); // Added for availability check
 const logger = require('../logs/logger');
 
 // @desc    Get all OTs
@@ -6,8 +7,18 @@ const logger = require('../logs/logger');
 // @access  Protected
 const getOTs = async (req, res) => {
   try {
-    const ots = await OperationTheatre.find({});
-    res.json(ots);
+    const { page = 1, limit = 10 } = req.query;
+    const count = await OperationTheatre.countDocuments({});
+    const ots = await OperationTheatre.find({})
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    res.json({
+        ots,
+        totalPages: Math.ceil(count / limit),
+        currentPage: Number(page),
+        totalOTs: count
+    });
   } catch (error) {
     logger.error(`Get OTs Error: ${error.message}`);
     res.status(500).json({ message: 'Server Error' });
@@ -107,11 +118,52 @@ const deleteOT = async (req, res) => {
   }
 };
 
+// @desc    Get Available OTs for a specific time slot
+// @route   GET /api/ots/available
+// @access  Protected
+const getAvailableOTs = async (req, res) => {
+  try {
+    const { date, startTime, endTime } = req.query;
+
+    if (!date || !startTime || !endTime) {
+      return res.status(400).json({ message: 'Please provide date, startTime, and endTime' });
+    }
+
+    const startDateTime = new Date(`${date}T${startTime}:00`);
+    const endDateTime = new Date(`${date}T${endTime}:00`);
+
+    // 1. Find all OTs
+    const allOTs = await OperationTheatre.find({}); // Fetch all OTs
+
+    // 2. Find surgeries that overlap with this time
+    const conflictingSurgeries = await Surgery.find({
+      status: { $in: ['Scheduled', 'Rescheduled', 'Emergency'] },
+      $or: [
+        { startDateTime: { $lt: endDateTime, $gte: startDateTime } },
+        { endDateTime: { $gt: startDateTime, $lte: endDateTime } },
+        { startDateTime: { $lte: startDateTime }, endDateTime: { $gte: endDateTime } }
+      ]
+    }).select('operationTheatre');
+
+    // 3. Extract occupied OT IDs
+    const occupiedOTIds = conflictingSurgeries.map(s => s.operationTheatre.toString());
+
+    // 4. Filter OTs
+    const availableOTs = allOTs.filter(ot => !occupiedOTIds.includes(ot._id.toString()));
+
+    res.json(availableOTs);
+
+  } catch (error) {
+    logger.error(`Check Availability Error: ${error.message}`);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 module.exports = {
   getOTs,
   getOTById,
   createOT,
   updateOT,
   deleteOT,
-  // Additional specialized controller methods can be added (e.g., check availability)
+  getAvailableOTs
 };

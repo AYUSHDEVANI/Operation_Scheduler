@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log
+# Ignore logs directory but keep logger.js
+logs/*
+!logs/logger.js
+.env
+.git
+.gitignore

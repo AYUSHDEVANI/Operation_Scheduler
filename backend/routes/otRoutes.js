@@ -6,8 +6,11 @@ const {
   createOT,
   updateOT,
   deleteOT,
+  getAvailableOTs
 } = require('../controllers/otController');
 const { protect, admin } = require('../middleware/authMiddleware');
+
+router.get('/available', protect, getAvailableOTs);
 
 router.route('/')
   .get(protect, getOTs)

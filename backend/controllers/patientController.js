@@ -6,7 +6,7 @@ const logger = require('../logs/logger');
 // @access  Protected
 const getPatients = async (req, res) => {
   try {
-    const { search } = req.query;
+    const { search, page = 1, limit = 10 } = req.query;
     let query = {};
     if (search) {
       query = {
@@ -16,8 +16,19 @@ const getPatients = async (req, res) => {
         ]
       };
     }
-    const patients = await Patient.find(query);
-    res.json(patients);
+
+    const count = await Patient.countDocuments(query);
+    const patients = await Patient.find(query)
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .exec();
+
+    res.json({
+      patients,
+      totalPages: Math.ceil(count / limit),
+      currentPage: Number(page),
+      totalPatients: count
+    });
   } catch (error) {
     logger.error(`Get Patients Error: ${error.message}`);
     res.status(500).json({ message: 'Server Error' });
@@ -45,7 +56,7 @@ const getPatientById = async (req, res) => {
 // @route   POST /api/patients
 // @access  Private/Admin (or User?)
 const createPatient = async (req, res) => {
-  const { name, age, gender, contactNumber, email, medicalHistory, pastSurgeries } = req.body;
+  const { name, age, gender, contactNumber, email, medicalHistory, pastSurgeries, assignedDoctor } = req.body;
   try {
     const patient = new Patient({
       name,
@@ -54,7 +65,8 @@ const createPatient = async (req, res) => {
       contactNumber,
       email,
       medicalHistory, // Expecting array of objects
-      pastSurgeries
+      pastSurgeries,
+      assignedDoctor
     });
 
     const createdPatient = await patient.save();
@@ -70,7 +82,7 @@ const createPatient = async (req, res) => {
 // @route   PUT /api/patients/:id
 // @access  Private/Admin
 const updatePatient = async (req, res) => {
-  const { name, age, gender, contactNumber, email, medicalHistory, pastSurgeries } = req.body;
+  const { name, age, gender, contactNumber, email, medicalHistory, pastSurgeries, assignedDoctor } = req.body;
   
   try {
     const patient = await Patient.findById(req.params.id);
@@ -81,6 +93,7 @@ const updatePatient = async (req, res) => {
       patient.gender = gender || patient.gender;
       patient.contactNumber = contactNumber || patient.contactNumber;
       if (email !== undefined) patient.email = email; // Allow clearing or updating
+      if (assignedDoctor !== undefined) patient.assignedDoctor = assignedDoctor; 
       if (medicalHistory) patient.medicalHistory = medicalHistory;
       if (pastSurgeries) patient.pastSurgeries = pastSurgeries;
 

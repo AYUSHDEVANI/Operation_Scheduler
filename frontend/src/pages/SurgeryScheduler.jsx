@@ -32,13 +32,24 @@ const SurgeryScheduler = () => {
   const fetchData = async () => {
     try {
       const [surgeriesRes, doctorsRes, patientsRes, otsRes] = await Promise.all([
-        API.get('/surgeries'),
-        API.get('/doctors'),
-        API.get('/patients'),
-        API.get('/ots')
+        API.get('/surgeries?limit=1000'), // Calendar: Fetch many
+        API.get('/doctors?limit=1000'), // Dropdowns: Needs all
+        API.get('/patients?limit=1000'), // Dropdowns: Needs all
+        API.get('/ots?limit=1000') // Dropdowns: Needs all
       ]);
 
-      const formattedEvents = surgeriesRes.data.map(s => ({
+      // Helper to extract data (Array vs Paginated Object)
+      const extractData = (res) => Array.isArray(res.data) ? res.data : res.data[Object.keys(res.data)[0]]; // Just grab the first key which usually matches e.g. 'patients' or 'surgeries'
+      
+      // Better explicit extraction
+      const getList = (res, key) => Array.isArray(res.data) ? res.data : (res.data[key] || []);
+
+      const surgeries = getList(surgeriesRes, 'surgeries');
+      const docsList = getList(doctorsRes, 'doctors');
+      const patientsList = getList(patientsRes, 'patients');
+      const otsList = getList(otsRes, 'ots');
+
+      const formattedEvents = surgeries.map(s => ({
         id: s._id,
         title: `Surgery (${s.patient.name}) - ${s.operationTheatre.name}`,
         start: new Date(s.startDateTime),
@@ -47,11 +58,12 @@ const SurgeryScheduler = () => {
       }));
 
       setEvents(formattedEvents);
-      setDoctors(doctorsRes.data);
-      setPatients(patientsRes.data);
-      setOTs(otsRes.data);
+      setDoctors(docsList);
+      setPatients(patientsList);
+      setOTs(otsList);
     } catch (error) {
-      toast.error('Failed to load data');
+      console.error(error);
+      toast.error('Failed to load data ' + error.message);
     }
   };
 
@@ -138,6 +150,31 @@ const SurgeryScheduler = () => {
       }
     }
   });
+
+  // Check Availability when time changes (Moved after formik init)
+  useEffect(() => {
+    const checkAvailability = async () => {
+        const { date, startTime, endTime } = formik.values;
+        if (date && startTime && endTime) {
+            try {
+                const { data } = await API.get(`/ots/available?date=${date}&startTime=${startTime}&endTime=${endTime}`);
+                setOTs(data);
+                
+                // If current selection is invalid, reset it
+                if (formik.values.operationTheatre) {
+                      const isAvailable = data.find(ot => ot._id === formik.values.operationTheatre);
+                      if (!isAvailable) {
+                          toast.error('Selected OT is not available at this time.');
+                          formik.setFieldValue('operationTheatre', '');
+                      }
+                }
+            } catch (error) {
+                console.error('Error fetching available OTs', error);
+            }
+        }
+    };
+    checkAvailability();
+  }, [formik.values.date, formik.values.startTime, formik.values.endTime]);
 
   // Details Modal State
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -252,57 +289,55 @@ const SurgeryScheduler = () => {
   };
 
   const eventStyleGetter = (event, start, end, isSelected) => {
-    let backgroundColor = '#3B82F6'; // Default Blue (Scheduled)
+    let backgroundColor = '#1e293b'; // Primary (Navy)
     const status = event.resource.status;
     const priority = event.resource.priority;
 
     if (status === 'Cancelled') {
-        backgroundColor = '#9CA3AF'; // Gray (Cancelled) - distinct from error red
-        // Or keep it Red if user prefers "Alert". Let's use Gray for "inactive/cancelled" or Red for "Action needed"?
-        // Usually Cancelled = Gray/Crossed out. Let's use a Dark Grayish-Red or just Gray. 
-        // User said "reflect to dashboard", implying they want to see it. 
-        backgroundColor = '#6B7280'; 
+        backgroundColor = '#475569'; // Slate (Cancelled)
     } else if (status === 'Completed') {
-        backgroundColor = '#10B981'; // Green
+        backgroundColor = '#059669'; // Success (Emerald)
     } else if (status === 'Rescheduled') {
-        backgroundColor = '#F59E0B'; // Amber
+        backgroundColor = '#d97706'; // Warning (Amber/Gold)
     }
 
     // Emergency Override for Active Surgeries
     if (priority === 'Emergency' && status !== 'Cancelled' && status !== 'Completed') {
-        backgroundColor = '#EF4444'; // Red
+        backgroundColor = '#b91c1c'; // Emergency (Red)
     }
 
     const style = {
         backgroundColor,
-        borderRadius: '4px',
+        borderRadius: '6px',
         opacity: 0.9,
         color: 'white',
         border: '0px',
         display: 'block',
-        textDecoration: status === 'Cancelled' ? 'line-through' : 'none'
+        textDecoration: status === 'Cancelled' ? 'line-through' : 'none',
+        padding: '2px 5px',
+        fontSize: '0.85em'
     };
 
     return { style };
   };
 
   return (
-    <div className="h-screen flex flex-col p-4 bg-gray-50">
+    <div className="h-screen flex flex-col p-4 bg-background">
       <Toaster />
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-800">Surgery Scheduler</h2>
+        <h2 className="text-2xl font-bold text-charcoal">Surgery Scheduler</h2>
         <div className="flex gap-2">
            {/* Legend */}
            <div className="flex items-center gap-3 mr-4 text-sm hidden md:flex">
-                <div className="flex items-center gap-1"><span className="w-3 h-3 bg-blue-500 rounded-full"></span> Scheduled</div>
-                <div className="flex items-center gap-1"><span className="w-3 h-3 bg-red-500 rounded-full"></span> Emergency</div>
-                <div className="flex items-center gap-1"><span className="w-3 h-3 bg-green-500 rounded-full"></span> Completed</div>
+                <div className="flex items-center gap-1"><span className="w-3 h-3 bg-primary rounded-full"></span> Scheduled</div>
+                <div className="flex items-center gap-1"><span className="w-3 h-3 bg-emergency rounded-full"></span> Emergency</div>
+                <div className="flex items-center gap-1"><span className="w-3 h-3 bg-success rounded-full"></span> Completed</div>
                 <div className="flex items-center gap-1"><span className="w-3 h-3 bg-gray-500 rounded-full"></span> Cancelled</div>
            </div>
 
             <button 
                 onClick={handleDownloadPDF} 
-                className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 shadow-md transition-all flex items-center gap-2"
+                className="bg-charcoal text-surface px-4 py-2 rounded hover:bg-black transition-all flex items-center gap-2 shadow-sm"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -315,23 +350,27 @@ const SurgeryScheduler = () => {
                   setEditingSurgeryId(null);
                   formik.resetForm();
               }}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              className="bg-primary text-surface px-4 py-2 rounded hover:brightness-110 shadow-sm"
             >
               Schedule New Surgery
             </button>
         </div>
       </div>
 
-      <div className="flex-grow">
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: 600 }}
-          onSelectEvent={handleEventSelect}
-          eventPropGetter={eventStyleGetter}
-        />
+      <div className="flex-grow bg-surface p-4 rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+        <div className="flex-grow overflow-x-auto">
+             <div className="min-w-[800px] h-full">
+                <Calendar
+                localizer={localizer}
+                events={events}
+                startAccessor="start"
+                endAccessor="end"
+                style={{ height: '100%', minHeight: '500px' }}
+                onSelectEvent={handleEventSelect}
+                eventPropGetter={eventStyleGetter}
+                />
+             </div>
+        </div>
       </div>
 
       {/* Details Modal */}
@@ -377,7 +416,7 @@ const SurgeryScheduler = () => {
                         {/* Edit Button - Always visible or maybe hide for Cancelled? Let's keep it visible for rescheduling */}
                          <button 
                             onClick={handleEditSurgery}
-                            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+                            className="bg-warning text-charcoal px-4 py-2 rounded hover:brightness-110"
                         >
                             Edit
                         </button>
@@ -386,7 +425,7 @@ const SurgeryScheduler = () => {
                         {selectedEvent.resource.status !== 'Completed' && selectedEvent.resource.status !== 'Cancelled' && (
                             <button 
                                 onClick={handleCompleteSurgery}
-                                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                                className="bg-success text-surface px-4 py-2 rounded hover:brightness-110"
                             >
                                 Complete
                             </button>
@@ -396,7 +435,7 @@ const SurgeryScheduler = () => {
                          {selectedEvent.resource.status !== 'Cancelled' && selectedEvent.resource.status !== 'Completed' && (
                             <button 
                                 onClick={handleCancelSurgery}
-                                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                                className="bg-emergency text-surface px-4 py-2 rounded hover:brightness-110"
                             >
                                 Cancel
                             </button>
@@ -536,78 +575,89 @@ const SurgeryScheduler = () => {
           
           {/* Patient Selection */}
           <div>
-            <label className="block text-sm font-medium">Patient</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Patient</label>
             <select 
               name="patient"
-              className="w-full border rounded p-2"
-              onChange={formik.handleChange}
+              className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white"
+              onChange={(e) => {
+                  formik.handleChange(e);
+                  const pid = e.target.value;
+                  const foundPatient = patients.find(p => p._id === pid);
+                  if (foundPatient && foundPatient.assignedDoctor) {
+                      formik.setFieldValue('doctor', foundPatient.assignedDoctor);
+                  }
+              }}
               value={formik.values.patient}
             >
               <option value="">Select Patient</option>
               {patients.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
             </select>
-            {formik.errors.patient && <div className="text-red-500 text-sm">{formik.errors.patient}</div>}
+            {formik.errors.patient && <div className="text-emergency text-sm mt-1">{formik.errors.patient}</div>}
           </div>
 
-          {/* Doctor Selection */}
-          <div>
-            <label className="block text-sm font-medium">Doctor</label>
-            <select 
-              name="doctor"
-              className="w-full border rounded p-2"
-              onChange={formik.handleChange}
-              value={formik.values.doctor}
-            >
-               <option value="">Select Doctor</option>
-              {doctors.map(d => <option key={d._id} value={d._id}>{d.name} ({d.specialization})</option>)}
-            </select>
-             {formik.errors.doctor && <div className="text-red-500 text-sm">{formik.errors.doctor}</div>}
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Doctor Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Doctor</label>
+                <select 
+                  name="doctor"
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white"
+                  onChange={formik.handleChange}
+                  value={formik.values.doctor}
+                >
+                   <option value="">Select Doctor</option>
+                  {doctors.map(d => <option key={d._id} value={d._id}>{d.name} ({d.specialization})</option>)}
+                </select>
+                 {formik.errors.doctor && <div className="text-emergency text-sm mt-1">{formik.errors.doctor}</div>}
+              </div>
 
-          {/* OT Selection */}
-           <div>
-            <label className="block text-sm font-medium">Operation Theatre</label>
-            <select 
-              name="operationTheatre"
-              className="w-full border rounded p-2"
-              onChange={formik.handleChange}
-              value={formik.values.operationTheatre}
-            >
-               <option value="">Select OT</option>
-              {ots.map(o => <option key={o._id} value={o._id}>{o.name} - {o.status}</option>)}
-            </select>
-             {formik.errors.operationTheatre && <div className="text-red-500 text-sm">{formik.errors.operationTheatre}</div>}
+              {/* OT Selection */}
+               <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Operation Theatre</label>
+                <select 
+                  name="operationTheatre"
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white"
+                  onChange={formik.handleChange}
+                  value={formik.values.operationTheatre}
+                >
+                   <option value="">Select OT</option>
+                  {ots.map(o => <option key={o._id} value={o._id}>{o.name} - {o.status}</option>)}
+                </select>
+                 {formik.errors.operationTheatre && <div className="text-emergency text-sm mt-1">{formik.errors.operationTheatre}</div>}
+              </div>
           </div>
 
           {/* Date & Time */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium">Date</label>
-              <input type="date" name="date" className="w-full border rounded p-2" onChange={formik.handleChange} value={formik.values.date} />
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Date</label>
+              <input type="date" name="date" className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent" onChange={formik.handleChange} value={formik.values.date} />
             </div>
-            <div>
-              <label className="block text-sm font-medium">Start</label>
-              <input type="time" name="startTime" className="w-full border rounded p-2" onChange={formik.handleChange} value={formik.values.startTime} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">End</label>
-              <input type="time" name="endTime" className="w-full border rounded p-2" onChange={formik.handleChange} value={formik.values.endTime} />
+            <div className="grid grid-cols-2 md:col-span-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Start Time</label>
+                  <input type="time" name="startTime" className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent" onChange={formik.handleChange} value={formik.values.startTime} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">End Time</label>
+                  <input type="time" name="endTime" className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent" onChange={formik.handleChange} value={formik.values.endTime} />
+                </div>
             </div>
           </div>
-           {formik.errors.date && <div className="text-red-500 text-sm">{formik.errors.date}</div>}
+           {formik.errors.date && <div className="text-emergency text-sm mt-1">{formik.errors.date}</div>}
 
            {/* Priority & Anesthesia */}
-           <div className="grid grid-cols-2 gap-2">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
-               <label className="block text-sm font-medium">Priority</label>
-                <select name="priority" className="w-full border rounded p-2" onChange={formik.handleChange} value={formik.values.priority}>
+               <label className="block text-sm font-semibold text-gray-700 mb-1">Priority</label>
+                <select name="priority" className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent bg-white" onChange={formik.handleChange} value={formik.values.priority}>
                   <option value="Normal">Normal</option>
                   <option value="Emergency">Emergency</option>
                 </select>
              </div>
              <div>
-                <label className="block text-sm font-medium">Anesthesia</label>
-                <input type="text" name="anesthesiaType" className="w-full border rounded p-2" onChange={formik.handleChange} value={formik.values.anesthesiaType} />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Anesthesia Type</label>
+                <input type="text" name="anesthesiaType" className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="e.g. General" onChange={formik.handleChange} value={formik.values.anesthesiaType} />
              </div>
            </div>
 

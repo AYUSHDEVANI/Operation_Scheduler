@@ -5,11 +5,14 @@ const logger = require('../logs/logger');
 // NOTE: User must configure these in .env
 // For Gmail: Use App Password, not main password.
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // or use host/port for generic SMTP
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // Use SSL
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000, // 10 seconds
 });
 
 const sendEmail = async (to, subject, html) => {

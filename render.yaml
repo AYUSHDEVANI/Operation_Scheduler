@@ -16,11 +16,12 @@ services:
       - key: NODE_ENV
         value: production
 
-staticSites:
   # Frontend Service (Static Site)
-  - name: hospital-frontend
+  - type: web
+    name: hospital-frontend
+    env: static
     buildCommand: cd frontend && npm install && npm run build
-    publishDir: ./frontend/dist
+    staticPublishPath: ./frontend/dist
     plan: free
     region: singapore
     envVars:

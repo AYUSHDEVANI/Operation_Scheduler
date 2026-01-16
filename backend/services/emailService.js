@@ -15,11 +15,11 @@ const transporter = nodemailer.createTransport({
   tls: {
       ciphers: 'SSLv3'
   },
-  dnsTimeout: 10000,
   connectionTimeout: 10000,
-  socketTimeout: 10000,
   // Force IPv4
-  family: 4
+  family: 4,
+  debug: true, // Show verbose logs
+  logger: true // Log to console
 });
 
 // Verify connection configuration

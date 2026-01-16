@@ -1,5 +1,5 @@
-# Use official Node.js image
-FROM node:18-alpine
+# Use Debian-based image to avoid Alpine DNS/Network timeouts
+FROM node:18-slim
 
 # Set working directory
 WORKDIR /app

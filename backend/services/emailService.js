@@ -15,6 +15,15 @@ const transporter = nodemailer.createTransport({
   connectionTimeout: 10000, // 10 seconds
 });
 
+// Verify connection configuration
+transporter.verify(function (error, success) {
+  if (error) {
+    logger.error(`SMTP Connection Error: ${error.message}`);
+  } else {
+    logger.info("SMTP Server is ready to take our messages");
+  }
+});
+
 const sendEmail = async (to, subject, html) => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     logger.warn('Email credentials not found in .env. Skipping email sending.');

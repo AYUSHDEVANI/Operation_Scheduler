@@ -6,21 +6,21 @@ const logger = require('../logs/logger');
 // For Gmail: Use App Password, not main password.
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // Use SSL
+  port: 587,
+  secure: false, // Use STARTTLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  connectionTimeout: 10000, // 10 seconds
+  connectionTimeout: 10000, 
 });
 
 // Verify connection configuration
 transporter.verify(function (error, success) {
   if (error) {
-    logger.error(`SMTP Connection Error: ${error.message}`);
+    logger.error(`SMTP Connection Error (Port 587): ${error.message}`);
   } else {
-    logger.info("SMTP Server is ready to take our messages");
+    logger.info("SMTP Server is ready (Port 587)");
   }
 });
 

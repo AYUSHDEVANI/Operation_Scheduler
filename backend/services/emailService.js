@@ -1,37 +1,48 @@
-const { Resend } = require('resend');
+const axios = require('axios');
 const logger = require('../logs/logger');
 
-// Initialize Resend with API Key
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Brevo API Endpoint
+const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
 
 /**
- * Send an email using Resend API
- * @param {string} to - Recipient email
- * @param {string} subject - Email subject
- * @param {string} html - Email body (HTML)
+ * Send an email using Brevo (Sendinblue) API via Axios
+ * This uses HTTP (Port 443) which works on Render Free Tier
  */
 const sendEmail = async (to, subject, html) => {
-  if (!process.env.RESEND_API_KEY) {
-    logger.warn('RESEND_API_KEY not found in .env. Skipping email sending.');
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.BREVO_SENDER_EMAIL;
+
+  if (!apiKey || !senderEmail) {
+    logger.warn('BREVO_API_KEY or BREVO_SENDER_EMAIL not found in .env. Skipping email.');
     return;
   }
 
+  const data = {
+    sender: { email: senderEmail, name: 'Hospital Scheduler' },
+    to: [{ email: to }],
+    subject: subject,
+    htmlContent: html,
+  };
+
   try {
-    const { data, error } = await resend.emails.send({
-      from: 'Hospital Scheduler <onboarding@resend.dev>', // Default testing domain
-      to: [to],
-      subject: subject,
-      html: html,
+    const response = await axios.post(BREVO_URL, data, {
+      headers: {
+        'accept': 'application/json',
+        'api-key': apiKey,
+        'content-type': 'application/json',
+      },
+      timeout: 10000 // 10s timeout
     });
 
-    if (error) {
-      logger.error(`Resend Error: ${error.message}`);
-      return;
-    }
-
-    logger.info(`Email sent successfully: ${data.id}`);
+    logger.info(`Email sent successfully via Brevo: ${response.data.messageId || 'OK'}`);
   } catch (error) {
-    logger.error(`Unexpected Error sending email: ${error.message}`);
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      logger.error(`Brevo API Error: ${JSON.stringify(error.response.data)}`);
+    } else {
+      logger.error(`Error sending email: ${error.message}`);
+    }
   }
 };
 

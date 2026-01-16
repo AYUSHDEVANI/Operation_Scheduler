@@ -15,7 +15,9 @@ services:
         generateValue: true
       - key: NODE_ENV
         value: production
-      - key: RESEND_API_KEY
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
         sync: false
 
   # 2. Frontend Service (Node.js Web Service)

@@ -12,15 +12,22 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  connectionTimeout: 10000, 
+  tls: {
+      ciphers: 'SSLv3'
+  },
+  dnsTimeout: 10000,
+  connectionTimeout: 10000,
+  socketTimeout: 10000,
+  // Force IPv4
+  family: 4
 });
 
 // Verify connection configuration
 transporter.verify(function (error, success) {
   if (error) {
-    logger.error(`SMTP Connection Error (Port 587): ${error.message}`);
+    logger.error(`SMTP Connection Error (Force IPv4): ${error.message}`);
   } else {
-    logger.info("SMTP Server is ready (Port 587)");
+    logger.info("SMTP Server is ready (IPv4)");
   }
 });
 

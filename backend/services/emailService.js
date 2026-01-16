@@ -12,14 +12,12 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  tls: {
-      ciphers: 'SSLv3'
-  },
-  connectionTimeout: 10000,
-  // Force IPv4
-  family: 4,
-  debug: true, // Show verbose logs
-  logger: true // Log to console
+  // Increased timeouts for cloud environments
+  connectionTimeout: 30000, 
+  // Force IPv4 to avoid IPv6 routing issues
+  family: 4, 
+  debug: true, 
+  logger: true 
 });
 
 // Verify connection configuration

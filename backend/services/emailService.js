@@ -41,7 +41,16 @@ const sendEmail = async (to, subject, html) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
+    const info = await new Promise((resolve, reject) => {
+      transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+          logger.error(`SendMail Callback Error: ${err.message}`);
+          reject(err);
+        } else {
+          resolve(info);
+        }
+      });
+    });
     logger.info(`Email sent: ${info.messageId}`);
   } catch (error) {
     logger.error(`Error sending email: ${error.message}`);

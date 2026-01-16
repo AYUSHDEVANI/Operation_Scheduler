@@ -10,18 +10,17 @@ services:
       - key: PORT
         value: 5000
       - key: MONGO_URI
-        sync: false # User enters this in Dashboard to keep secret
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: NODE_ENV
         value: production
 
+staticSites:
   # Frontend Service (Static Site)
-  - type: static
-    name: hospital-frontend
-    env: static
+  - name: hospital-frontend
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
+    publishDir: ./frontend/dist
     plan: free
     region: singapore
     envVars:

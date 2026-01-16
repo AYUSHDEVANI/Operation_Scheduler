@@ -1,5 +1,5 @@
 services:
-  # Backend Service (Docker)
+  # 1. Backend Service (Docker)
   - type: web
     name: hospital-backend
     env: docker
@@ -16,12 +16,12 @@ services:
       - key: NODE_ENV
         value: production
 
-  # Frontend Service (Static Site)
+  # 2. Frontend Service (Node.js Web Service)
   - type: web
     name: hospital-frontend
-    env: static
+    env: node
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
+    startCommand: cd frontend && npx serve -s dist -l $PORT
     plan: free
     region: singapore
     envVars:

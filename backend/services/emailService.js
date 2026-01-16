@@ -1,63 +1,37 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const logger = require('../logs/logger');
 
-// Create Transporter
-// NOTE: User must configure these in .env
-// For Gmail: Use App Password, not main password.
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // Use STARTTLS
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false // Fix for some cloud SSL issues
-  },
-  // Increased timeouts
-  connectionTimeout: 30000, 
-  family: 4, 
-  debug: true, 
-  logger: true 
-});
+// Initialize Resend with API Key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Verify connection configuration
-transporter.verify(function (error, success) {
-  if (error) {
-    logger.error(`SMTP Connection Error (Force IPv4): ${error.message}`);
-  } else {
-    logger.info("SMTP Server is ready (IPv4)");
-  }
-});
-
+/**
+ * Send an email using Resend API
+ * @param {string} to - Recipient email
+ * @param {string} subject - Email subject
+ * @param {string} html - Email body (HTML)
+ */
 const sendEmail = async (to, subject, html) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    logger.warn('Email credentials not found in .env. Skipping email sending.');
+  if (!process.env.RESEND_API_KEY) {
+    logger.warn('RESEND_API_KEY not found in .env. Skipping email sending.');
     return;
   }
 
-  const mailOptions = {
-    from: `"Hospital Scheduler" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    html,
-  };
-
   try {
-    const info = await new Promise((resolve, reject) => {
-      transporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-          logger.error(`SendMail Callback Error: ${err.message}`);
-          reject(err);
-        } else {
-          resolve(info);
-        }
-      });
+    const { data, error } = await resend.emails.send({
+      from: 'Hospital Scheduler <onboarding@resend.dev>', // Default testing domain
+      to: [to],
+      subject: subject,
+      html: html,
     });
-    logger.info(`Email sent: ${info.messageId}`);
+
+    if (error) {
+      logger.error(`Resend Error: ${error.message}`);
+      return;
+    }
+
+    logger.info(`Email sent successfully: ${data.id}`);
   } catch (error) {
-    logger.error(`Error sending email: ${error.message}`);
+    logger.error(`Unexpected Error sending email: ${error.message}`);
   }
 };
 
@@ -98,7 +72,7 @@ const sendSurgeryNotification = async (recipientEmail, surgeryDetails, type) => 
             break;
         case 'RESCHEDULED':
             subject = 'Surgery Rescheduled Update';
-             message = `
+            message = `
                 <h3>Surgery Rescheduled</h3>
                 <p>The surgery details have been updated:</p>
                 <ul>

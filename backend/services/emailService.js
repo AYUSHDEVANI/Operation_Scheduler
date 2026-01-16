@@ -5,14 +5,18 @@ const logger = require('../logs/logger');
 // NOTE: User must configure these in .env
 // For Gmail: Use App Password, not main password.
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // Use STARTTLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  // Increased timeouts for cloud environments
+  tls: {
+    rejectUnauthorized: false // Fix for some cloud SSL issues
+  },
+  // Increased timeouts
   connectionTimeout: 30000, 
-  // Force IPv4 to avoid IPv6 routing issues
   family: 4, 
   debug: true, 
   logger: true 

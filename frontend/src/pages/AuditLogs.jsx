@@ -88,8 +88,8 @@ const AuditLogs = () => {
                         return (
                             <div className="mb-6">
                                 <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Changes</span>
-                                <div className="mt-2 border rounded-lg overflow-hidden">
-                                    <table className="w-full text-sm text-left">
+                                <div className="mt-2 border rounded-lg overflow-x-auto">
+                                    <table className="w-full text-sm text-left min-w-[300px]">
                                         <thead className="bg-gray-50 text-gray-500 font-medium">
                                             <tr>
                                                 <th className="px-4 py-2">Field</th>

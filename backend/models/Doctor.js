@@ -35,6 +35,10 @@ const doctorSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'OperationTheatre'
   }],
+  isDeleted: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true,
 });

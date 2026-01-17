@@ -21,6 +21,10 @@ const resourceSchema = new mongoose.Schema({
   lowStockThreshold: {
     type: Number,
     default: 10,
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true,

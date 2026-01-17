@@ -27,6 +27,10 @@ const otSchema = new mongoose.Schema({
   resources: {
     type: Map,
     of: Number, // Map of resource name to quantity
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true,

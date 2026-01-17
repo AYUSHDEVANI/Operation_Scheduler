@@ -40,6 +40,10 @@ const patientSchema = new mongoose.Schema({
     date: Date,
     notes: String
   }],
+  isDeleted: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true,
 });

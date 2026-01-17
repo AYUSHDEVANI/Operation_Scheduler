@@ -58,6 +58,10 @@ const surgerySchema = new mongoose.Schema({
     default: 'Normal',
   },
   notes: String,
+  isDeleted: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true,
 });

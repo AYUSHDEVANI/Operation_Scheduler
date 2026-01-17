@@ -9,9 +9,12 @@ const {
 } = require('../controllers/doctorController');
 const { protect, admin, superAdmin } = require('../middleware/authMiddleware');
 
+const validate = require('../middleware/validate');
+const { doctorSchema } = require('../middleware/validationSchemas');
+
 router.route('/')
   .get(protect, getDoctors)
-  .post(protect, superAdmin, createDoctor);
+  .post(protect, superAdmin, validate(doctorSchema), createDoctor);
 
 router.route('/:id')
   .get(protect, getDoctorById)

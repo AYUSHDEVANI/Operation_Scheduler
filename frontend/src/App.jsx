@@ -31,19 +31,19 @@ function App() {
              } />
              
              <Route path="doctors" element={
-                <ProtectedRoute allowedRoles={['ADMIN']}>
+                <ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}>
                   <Doctors />
                 </ProtectedRoute>
              } />
 
              <Route path="patients" element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR']}>
+                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPER_ADMIN']}>
                   <Patients />
                 </ProtectedRoute>
              } />
             
              <Route path="ots" element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR']}>
+                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPER_ADMIN']}>
                   <OTs />
                 </ProtectedRoute>
              } />
@@ -55,13 +55,13 @@ function App() {
              } />
 
              <Route path="resources" element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR']}>
+                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPER_ADMIN']}>
                   <Resources />
                 </ProtectedRoute>
              } />
 
              <Route path="reports" element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR']}>
+                <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR', 'SUPER_ADMIN']}>
                   <Reports />
                 </ProtectedRoute>
              } />

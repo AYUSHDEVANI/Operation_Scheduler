@@ -12,9 +12,12 @@ const { protect, admin } = require('../middleware/authMiddleware');
 
 router.get('/available', protect, getAvailableOTs);
 
+const validate = require('../middleware/validate');
+const { otSchema } = require('../middleware/validationSchemas');
+
 router.route('/')
   .get(protect, getOTs)
-  .post(protect, admin, createOT);
+  .post(protect, admin, validate(otSchema), createOT);
 
 router.route('/:id')
   .get(protect, getOTById)

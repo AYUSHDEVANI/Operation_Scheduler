@@ -1,6 +1,7 @@
 const OperationTheatre = require('../models/OperationTheatre');
 const Surgery = require('../models/Surgery'); // Added for availability check
 const logger = require('../logs/logger');
+const { logAction } = require('../utils/auditLogger');
 
 // @desc    Get all OTs
 // @route   GET /api/ots
@@ -62,6 +63,7 @@ const createOT = async (req, res) => {
     });
 
     const createdOT = await ot.save();
+    await logAction('CREATE_OT', req, { collectionName: 'ots', id: createdOT._id, name: createdOT.name }, { otNumber, capacity });
     logger.info(`OT created: ${createdOT.otNumber}`);
     res.status(201).json(createdOT);
   } catch (error) {
@@ -80,14 +82,37 @@ const updateOT = async (req, res) => {
     const ot = await OperationTheatre.findById(req.params.id);
 
     if (ot) {
-      ot.otNumber = otNumber || ot.otNumber;
-      ot.name = name || ot.name;
-      ot.status = status || ot.status;
-      if (instruments) ot.instruments = instruments;
-      if (resources) ot.resources = resources;
+      const changes = {};
+      // Fields to check for updates
+      const fields = ['otNumber', 'name', 'status'];
+      
+      fields.forEach(field => {
+          if (req.body[field] !== undefined && req.body[field] != ot[field]) {
+              changes[field] = { old: ot[field], new: req.body[field] };
+              ot[field] = req.body[field];
+          }
+      });
+
+      if (instruments) {
+          // Simplified for arrays - logging that it changed
+          changes['instruments'] = { old: '...', new: 'Updated' };
+          ot.instruments = instruments;
+      }
+      if (resources) {
+          changes['resources'] = { old: '...', new: 'Updated' };
+          ot.resources = resources;
+      }
 
       const updatedOT = await ot.save();
-      logger.info(`OT updated: ${updatedOT.otNumber}`);
+      logger.info(`OT updated: ${updatedOT.name}`);
+      
+      if (Object.keys(changes).length > 0) {
+          await logAction('UPDATE_OT', req, 
+            { collectionName: 'ots', id: updatedOT._id, name: updatedOT.name }, 
+            { changes, snapshot: updatedOT.toObject() }
+          );
+      }
+      
       res.json(updatedOT);
     } else {
       res.status(404).json({ message: 'OT not found' });
@@ -108,6 +133,7 @@ const deleteOT = async (req, res) => {
     if (ot) {
       await ot.deleteOne();
       logger.info(`OT deleted: ${req.params.id}`);
+      await logAction('DELETE_OT', req, { collectionName: 'ots', id: req.params.id, name: ot.name });
       res.json({ message: 'OT removed' });
     } else {
       res.status(404).json({ message: 'OT not found' });

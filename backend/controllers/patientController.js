@@ -1,4 +1,5 @@
 const Patient = require('../models/Patient');
+const { logAction } = require('../utils/auditLogger');
 const logger = require('../logs/logger');
 
 // @desc    Get all patients
@@ -71,6 +72,9 @@ const createPatient = async (req, res) => {
 
     const createdPatient = await patient.save();
     logger.info(`Patient created: ${createdPatient.name}`);
+    
+    await logAction('CREATE_PATIENT', req, { collectionName: 'patients', id: createdPatient._id, name: createdPatient.name }, { age, gender, contactNumber });
+
     res.status(201).json(createdPatient);
   } catch (error) {
     logger.error(`Create Patient Error: ${error.message}`);
@@ -88,17 +92,35 @@ const updatePatient = async (req, res) => {
     const patient = await Patient.findById(req.params.id);
 
     if (patient) {
-      patient.name = name || patient.name;
-      patient.age = age || patient.age;
-      patient.gender = gender || patient.gender;
-      patient.contactNumber = contactNumber || patient.contactNumber;
-      if (email !== undefined) patient.email = email; // Allow clearing or updating
-      if (assignedDoctor !== undefined) patient.assignedDoctor = assignedDoctor; 
-      if (medicalHistory) patient.medicalHistory = medicalHistory;
+      const changes = {};
+      const fields = ['name', 'age', 'gender', 'contactNumber', 'email', 'assignedDoctor'];
+
+      fields.forEach(field => {
+          if (req.body[field] !== undefined && req.body[field] != patient[field]) {
+              changes[field] = { old: patient[field], new: req.body[field] };
+              patient[field] = req.body[field];
+          }
+      });
+
+      // Special handling for arrays if needed, or simple replace
+      if (medicalHistory) {
+         // simplistic check, ideally deep compare
+         changes['medicalHistory'] = { old: '...', new: 'Updated' }; 
+         patient.medicalHistory = medicalHistory;
+      }
       if (pastSurgeries) patient.pastSurgeries = pastSurgeries;
 
       const updatedPatient = await patient.save();
       logger.info(`Patient updated: ${updatedPatient.name}`);
+      
+      // Only log if there were actual changes
+      if (Object.keys(changes).length > 0) {
+          await logAction('UPDATE_PATIENT', req, 
+            { collectionName: 'patients', id: updatedPatient._id, name: updatedPatient.name }, 
+            { changes, snapshot: updatedPatient.toObject() }
+          );
+      }
+      
       res.json(updatedPatient);
     } else {
       res.status(404).json({ message: 'Patient not found' });
@@ -119,6 +141,7 @@ const deletePatient = async (req, res) => {
     if (patient) {
       await patient.deleteOne();
       logger.info(`Patient deleted: ${req.params.id}`);
+      await logAction('DELETE_PATIENT', req, { collectionName: 'patients', id: req.params.id, name: patient.name });
       res.json({ message: 'Patient removed' });
     } else {
       res.status(404).json({ message: 'Patient not found' });

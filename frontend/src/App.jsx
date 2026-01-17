@@ -13,6 +13,7 @@ import OTs from './pages/OTs';
 import SurgeryScheduler from './pages/SurgeryScheduler';
 import Reports from './pages/Reports';
 import Resources from './pages/Resources';
+import AuditLogs from './pages/AuditLogs';
 
 function App() {
   return (
@@ -62,6 +63,12 @@ function App() {
              <Route path="reports" element={
                 <ProtectedRoute allowedRoles={['ADMIN', 'DOCTOR']}>
                   <Reports />
+                </ProtectedRoute>
+             } />
+
+             <Route path="audit-logs" element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                  <AuditLogs />
                 </ProtectedRoute>
              } />
           </Route>

@@ -129,23 +129,23 @@ const OTs = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Number</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Actions</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Number</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Name</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Status</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-surface divide-y divide-gray-200">
               {ots.length > 0 ? ots.map((ot) => (
                 <tr key={ot._id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-charcoal">{ot.otNumber}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-charcoal">{ot.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-charcoal">{ot.otNumber}</td>
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-charcoal">{ot.name}</td>
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ot.status === 'Available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                       {ot.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm">
                     <button 
                       onClick={() => handleEdit(ot)}
                       className="text-primary hover:text-blue-900 font-medium"

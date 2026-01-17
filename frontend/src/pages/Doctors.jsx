@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import API from '../services/api';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import AuthContext from '../context/AuthContext';
 
 const Doctors = () => {
+  const { user } = useContext(AuthContext);
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', specialization: '', department: '', contactNumber: '', email: '', workingHours: '', preferredOTs: [] });
@@ -74,6 +76,18 @@ const Doctors = () => {
     mutation.mutate(formData);
   };
 
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this doctor?')) {
+        try {
+            await API.delete(`/doctors/${id}`);
+            queryClient.invalidateQueries(['doctors']);
+            toast.success('Doctor deleted successfully');
+        } catch (error) {
+            toast.error('Failed to delete doctor');
+        }
+    }
+  };
+
   if (isLoading && !doctors.length) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -91,6 +105,7 @@ const Doctors = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold text-charcoal">Doctors Directory</h2>
         <div className="flex gap-4 w-full md:w-auto">
+          {user?.role === 'SUPER_ADMIN' && (
            <button
             onClick={() => {
               setShowForm(!showForm);
@@ -100,6 +115,7 @@ const Doctors = () => {
           >
             {showForm ? 'Close Form' : 'Add New Doctor'}
           </button>
+          )}
         </div>
       </div>
 
@@ -204,13 +220,21 @@ const Doctors = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-charcoal">{doctor.specialization}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-charcoal">{doctor.department}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-charcoal">{doctor.contactNumber}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap flex items-center">
                     <button
                       onClick={() => handleEdit(doctor)}
-                      className="text-primary hover:text-blue-800 font-medium"
+                      className="text-primary hover:text-blue-800 font-medium flex items-center gap-1"
                     >
-                      Edit
+                      <Edit size={16} /> Edit
                     </button>
+                    {user?.role === 'SUPER_ADMIN' && (
+                      <button
+                        onClick={() => handleDelete(doctor._id)}
+                        className="text-red-600 hover:text-red-800 font-medium ml-4 flex items-center gap-1"
+                      >
+                        <Trash2 size={16} /> Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
               )) : (

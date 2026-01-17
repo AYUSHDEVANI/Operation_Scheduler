@@ -3,6 +3,7 @@ const Doctor = require('../models/Doctor');
 const Patient = require('../models/Patient'); // Needed for email access
 const OperationTheatre = require('../models/OperationTheatre');
 const logger = require('../logs/logger');
+const { logAction } = require('../utils/auditLogger');
 // checkOverlap and email logic moved to surgeryService
 
 // @desc    Schedule Surgery
@@ -18,6 +19,7 @@ const createSurgery = async (req, res) => {
     const io = req.app.get('io');
     const newSurgery = await createSurgeryService(req.body, io);
     logger.info(`Surgery scheduled: ${newSurgery._id}`);
+    await logAction('CREATE_SURGERY', req, { collectionName: 'surgeries', id: newSurgery._id, name: `Surgery` }, { ...req.body });
     res.status(201).json(newSurgery);
   } catch (error) {
     logger.error(`Create Surgery Error: ${error.message}`);
@@ -115,7 +117,8 @@ const updateSurgery = async (req, res) => {
         const io = req.app.get('io');
     const updatedSurgery = await updateSurgeryService(req.params.id, req.body, io);
     logger.info(`Surgery updated: ${updatedSurgery._id}`);
-        res.json(updatedSurgery);
+    await logAction('UPDATE_SURGERY', req, { collectionName: 'surgeries', id: updatedSurgery._id, name: 'Surgery' }, { ...req.body });
+    res.json(updatedSurgery);
     } catch (error) {
         logger.error(`Update Surgery Error: ${error.message}`);
         if (error.message === 'Surgery not found') {
@@ -148,6 +151,7 @@ const deleteSurgery = async (req, res) => {
 
       await surgery.deleteOne();
       logger.info(`Surgery cancelled: ${req.params.id}`);
+      await logAction('DELETE_SURGERY', req, { collectionName: 'surgeries', id: req.params.id, name: 'Surgery' });
       res.json({ message: 'Surgery cancelled' });
     } else {
       res.status(404).json({ message: 'Surgery not found' });

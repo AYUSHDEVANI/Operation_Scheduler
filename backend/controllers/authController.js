@@ -93,4 +93,83 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { loginUser, registerUser, getMe };
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const { sendOTP } = require('../services/emailService');
+
+// ... (existing exports)
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateProfile = async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    user.name = req.body.name || user.name;
+    // user.email = req.body.email || user.email; // Email update usually requires re-verification
+
+    const updatedUser = await user.save();
+    
+    logger.info(`User profile updated: ${updatedUser.email}`);
+
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      token: generateToken(updatedUser._id),
+    });
+  } else {
+    res.status(404).json({ message: 'User not found' });
+  }
+};
+
+// @desc    Request Password Reset OTP
+// @route   POST /api/auth/request-otp
+// @access  Private (Logged in user changing password)
+const requestOTP = async (req, res) => {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = Date.now() + 10 * 60 * 1000; // 10 Minutes
+
+    user.otp = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    await sendOTP(user.email, otp);
+    logger.info(`OTP sent to ${user.email}`);
+
+    res.json({ message: 'OTP sent to your email' });
+};
+
+// @desc    Verify OTP and Change Password
+// @route   POST /api/auth/verify-otp
+// @access  Private
+const verifyOTPAndChangePassword = async (req, res) => {
+    const { otp, newPassword } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.otp === otp && user.otpExpires > Date.now()) {
+        user.password = newPassword; // Will be hashed by pre-save hook
+        user.otp = undefined;
+        user.otpExpires = undefined;
+        await user.save();
+
+        logger.info(`Password changed for user ${user.email}`);
+        res.json({ message: 'Password changed successfully' });
+    } else {
+        res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+};
+
+module.exports = { loginUser, registerUser, getMe, updateProfile, requestOTP, verifyOTPAndChangePassword };

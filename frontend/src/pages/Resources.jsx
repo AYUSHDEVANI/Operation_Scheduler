@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import API from '../services/api';
+import { Edit, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Resources = () => {
+  // Add editingId state
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({ name: '', type: 'Drug', quantity: 0, unit: '', lowStockThreshold: 10 });
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
      const delayDebounce = setTimeout(() => {
@@ -30,33 +33,67 @@ const Resources = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await API.post('/resources', formData);
-      toast.success('Resource added successfully');
+      if (editingId) {
+          await API.put(`/resources/${editingId}`, formData);
+          toast.success('Resource updated successfully');
+      } else {
+          await API.post('/resources', formData);
+          toast.success('Resource added successfully');
+      }
       setShowForm(false);
+      setEditingId(null);
       setFormData({ name: '', type: 'Drug', quantity: 0, unit: '', lowStockThreshold: 10 });
       fetchResources();
     } catch (error) {
-       toast.error('Failed to add resource');
+       toast.error(editingId ? 'Failed to update resource' : 'Failed to add resource');
     }
+  };
+
+  const handleEdit = (item) => {
+      setEditingId(item._id);
+      setFormData({
+          name: item.name,
+          type: item.type,
+          quantity: item.quantity,
+          unit: item.unit,
+          lowStockThreshold: item.lowStockThreshold
+      });
+      setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+      if (window.confirm('Are you sure you want to delete this item?')) {
+          try {
+              await API.delete(`/resources/${id}`);
+              toast.success('Resource deleted successfully');
+              fetchResources();
+          } catch (error) {
+              toast.error('Failed to delete resource');
+          }
+      }
   };
 
   if (loading) return <div>Loading...</div>;
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Resource Inventory</h2>
-         <div className="flex gap-4">
+         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
            <input 
              type="text" 
              placeholder="Search items..." 
-             className="border rounded px-4 py-2"
+             className="border rounded px-4 py-2 w-full sm:w-64"
              value={searchTerm}
              onChange={(e) => setSearchTerm(e.target.value)}
            />
             <button 
-              onClick={() => setShowForm(!showForm)}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              onClick={() => {
+                  setShowForm(!showForm);
+                  setEditingId(null);
+                  setFormData({ name: '', type: 'Drug', quantity: 0, unit: '', lowStockThreshold: 10 });
+              }}
+              className="bg-primary text-surface px-4 py-2 rounded hover:brightness-110 shadow-sm w-full sm:w-auto whitespace-nowrap transition-all"
             >
               {showForm ? 'Close Form' : 'Add Item'}
             </button>
@@ -65,7 +102,7 @@ const Resources = () => {
 
       {showForm && (
         <div className="bg-surface p-6 rounded-xl shadow-md mb-6 border border-gray-100">
-          <h3 className="text-xl font-semibold mb-4 text-charcoal">Add New Resource</h3>
+          <h3 className="text-xl font-semibold mb-4 text-charcoal">{editingId ? 'Edit Resource' : 'Add New Resource'}</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
@@ -121,7 +158,9 @@ const Resources = () => {
                 />
               </div>
              </div>
-            <button type="submit" className="bg-success text-surface px-4 py-2 rounded hover:brightness-110 font-medium">Save Item</button>
+            <button type="submit" className="bg-success text-surface px-4 py-2 rounded hover:brightness-110 font-medium">
+                {editingId ? 'Update Item' : 'Save Item'}
+            </button>
           </form>
         </div>
       )}
@@ -131,26 +170,41 @@ const Resources = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Stock</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Status</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Name</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Type</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Stock</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Status</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-charcoal uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-surface divide-y divide-gray-200">
               {resources.map((item) => (
                 <tr key={item._id}>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-charcoal">{item.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-charcoal">{item.type}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-charcoal">
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap font-medium text-charcoal text-sm">{item.name}</td>
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap text-charcoal text-sm">{item.type}</td>
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap text-charcoal text-sm">
                       {item.quantity} {item.unit}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                     {item.quantity <= item.lowStockThreshold ? (
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Low Stock</span>
                     ) : (
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">In Stock</span>
                     )}
+                  </td>
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap flex items-center">
+                      <button 
+                          onClick={() => handleEdit(item)}
+                          className="text-primary hover:text-blue-700 font-medium text-sm mr-4 flex items-center gap-1"
+                      >
+                          <Edit size={16} /> Edit
+                      </button>
+                      <button 
+                          onClick={() => handleDelete(item._id)}
+                          className="text-red-500 hover:text-red-700 font-medium text-sm flex items-center gap-1"
+                      >
+                          <Trash2 size={16} /> Delete
+                      </button>
                   </td>
                 </tr>
               ))}

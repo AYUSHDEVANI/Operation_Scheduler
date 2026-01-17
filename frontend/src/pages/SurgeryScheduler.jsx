@@ -3,6 +3,7 @@ import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import Modal from 'react-modal';
 import toast, { Toaster } from 'react-hot-toast';
+import { Edit, Trash2, CheckCircle, XCircle, FileText, Download } from 'lucide-react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -51,7 +52,7 @@ const SurgeryScheduler = () => {
 
       const formattedEvents = surgeries.map(s => ({
         id: s._id,
-        title: `Surgery (${s.patient.name}) - ${s.operationTheatre.name}`,
+        title: `Surgery (${s.patient?.name || 'Unknown'}) - ${s.operationTheatre?.name || 'Unassigned'}`,
         start: new Date(s.startDateTime),
         end: new Date(s.endDateTime),
         resource: s
@@ -248,9 +249,9 @@ const SurgeryScheduler = () => {
     const s = selectedEvent.resource;
     setEditingSurgeryId(selectedEvent.id); // Set ID
     formik.setValues({
-      patient: s.patient._id,
-      doctor: s.doctor._id,
-      operationTheatre: s.operationTheatre._id,
+      patient: s.patient?._id || '',
+      doctor: s.doctor?._id || '',
+      operationTheatre: s.operationTheatre?._id || '',
       date: moment(s.startDateTime).format('YYYY-MM-DD'),
       startTime: moment(s.startDateTime).format('HH:mm'),
       endTime: moment(s.endDateTime).format('HH:mm'),
@@ -288,6 +289,20 @@ const SurgeryScheduler = () => {
     }
   };
 
+  const handleDeleteSurgery = async () => {
+      if (!selectedEvent) return;
+      if (!window.confirm(`Are you sure you want to PERMANENTLY delete surgery for ${selectedEvent.title}? This cannot be undone.`)) return;
+
+      try {
+          await API.delete(`/surgeries/${selectedEvent.id}`);
+          toast.success('Surgery Deleted');
+          setDetailsModalIsOpen(false);
+          fetchData();
+      } catch (error) {
+          toast.error('Failed to delete surgery');
+      }
+  };
+
   const eventStyleGetter = (event, start, end, isSelected) => {
     let backgroundColor = '#1e293b'; // Primary (Navy)
     const status = event.resource.status;
@@ -322,13 +337,13 @@ const SurgeryScheduler = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col p-4 bg-background">
+    <div className="h-[calc(100vh-100px)] flex flex-col p-4 bg-background">
       <Toaster />
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-charcoal">Surgery Scheduler</h2>
         <div className="flex gap-2">
            {/* Legend */}
-           <div className="flex items-center gap-3 mr-4 text-sm hidden md:flex">
+           <div className="flex items-center gap-3 mr-4 text-sm hidden lg:flex">
                 <div className="flex items-center gap-1"><span className="w-3 h-3 bg-primary rounded-full"></span> Scheduled</div>
                 <div className="flex items-center gap-1"><span className="w-3 h-3 bg-emergency rounded-full"></span> Emergency</div>
                 <div className="flex items-center gap-1"><span className="w-3 h-3 bg-success rounded-full"></span> Completed</div>
@@ -359,7 +374,7 @@ const SurgeryScheduler = () => {
 
       <div className="flex-grow bg-surface p-4 rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
         <div className="flex-grow overflow-x-auto">
-             <div className="min-w-[800px] h-full">
+             <div className="min-w-[600px] md:min-w-0 h-full">
                 <Calendar
                 localizer={localizer}
                 events={events}
@@ -402,9 +417,9 @@ const SurgeryScheduler = () => {
 
             {activeTab === 'details' ? (
                 <div className="space-y-3">
-                    <p><strong>Patient:</strong> {selectedEvent.resource.patient.name}</p>
-                    <p><strong>Doctor:</strong> {selectedEvent.resource.doctor.name}</p> {/* Ideally map ID to Name */}
-                    <p><strong>OT:</strong> {selectedEvent.resource.operationTheatre.name}</p>
+                    <p><strong>Patient:</strong> {selectedEvent.resource.patient?.name || 'Unknown'}</p>
+                    <p><strong>Doctor:</strong> {selectedEvent.resource.doctor?.name || 'Unknown'}</p> {/* Ideally map ID to Name */}
+                    <p><strong>OT:</strong> {selectedEvent.resource.operationTheatre?.name || 'Unassigned'}</p>
                     <p><strong>Time:</strong> {moment(selectedEvent.start).format('LT')} - {moment(selectedEvent.end).format('LT')}</p>
                     <p>
                         <strong>Priority:</strong> 
@@ -413,33 +428,40 @@ const SurgeryScheduler = () => {
                         </span>
                     </p>
                     <div className="mt-6 flex justify-end space-x-2">
-                        {/* Edit Button - Always visible or maybe hide for Cancelled? Let's keep it visible for rescheduling */}
+                        {/* Edit Button */}
                          <button 
                             onClick={handleEditSurgery}
-                            className="bg-warning text-charcoal px-4 py-2 rounded hover:brightness-110"
+                            className="bg-warning text-charcoal px-4 py-2 rounded hover:brightness-110 flex items-center gap-2"
                         >
-                            Edit
+                            <Edit size={18} /> Edit
                         </button>
 
-                        {/* Complete Button - Hide if already Completed or Cancelled */}
+                        {/* Complete Button */}
                         {selectedEvent.resource.status !== 'Completed' && selectedEvent.resource.status !== 'Cancelled' && (
                             <button 
                                 onClick={handleCompleteSurgery}
-                                className="bg-success text-surface px-4 py-2 rounded hover:brightness-110"
+                                className="bg-success text-surface px-4 py-2 rounded hover:brightness-110 flex items-center gap-2"
                             >
-                                Complete
+                                <CheckCircle size={18} /> Complete
                             </button>
                         )}
 
-                        {/* Cancel Button - Hide if already Cancelled or Completed */}
+                        {/* Cancel Button */}
                          {selectedEvent.resource.status !== 'Cancelled' && selectedEvent.resource.status !== 'Completed' && (
                             <button 
                                 onClick={handleCancelSurgery}
-                                className="bg-emergency text-surface px-4 py-2 rounded hover:brightness-110"
+                                className="bg-emergency text-surface px-4 py-2 rounded hover:brightness-110 flex items-center gap-2"
                             >
-                                Cancel
+                                <XCircle size={18} /> Cancel
                             </button>
                         )}
+
+                        <button 
+                            onClick={handleDeleteSurgery}
+                            className="bg-red-800 text-white px-4 py-2 rounded hover:bg-red-900 flex items-center gap-2"
+                        >
+                            <Trash2 size={18} /> Delete
+                        </button>
 
                         <button 
                             onClick={() => setDetailsModalIsOpen(false)}

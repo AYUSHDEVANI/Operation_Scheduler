@@ -1,5 +1,6 @@
 const Doctor = require('../models/Doctor');
 const logger = require('../logs/logger');
+const { logAction } = require('../utils/auditLogger');
 
 // @desc    Get all doctors
 // @route   GET /api/doctors
@@ -57,6 +58,7 @@ const createDoctor = async (req, res) => {
 
     const createdDoctor = await doctor.save();
     logger.info(`Doctor created: ${createdDoctor.name}`);
+    await logAction('CREATE_DOCTOR', req, { collectionName: 'doctors', id: createdDoctor._id, name: createdDoctor.name }, { specialization });
     res.status(201).json(createdDoctor);
   } catch (error) {
     logger.error(`Create Doctor Error: ${error.message}`);
@@ -103,6 +105,7 @@ const deleteDoctor = async (req, res) => {
     if (doctor) {
       await doctor.deleteOne();
       logger.info(`Doctor deleted: ${req.params.id}`);
+      await logAction('DELETE_DOCTOR', req, { collectionName: 'doctors', id: doctor._id, name: doctor.name });
       res.json({ message: 'Doctor removed' });
     } else {
       res.status(404).json({ message: 'Doctor not found' });

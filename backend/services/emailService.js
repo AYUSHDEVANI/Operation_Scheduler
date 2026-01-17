@@ -101,4 +101,16 @@ const sendSurgeryNotification = async (recipientEmail, surgeryDetails, type) => 
     await sendEmail(recipientEmail, subject, message);
 };
 
-module.exports = { sendSurgeryNotification };
+const sendOTP = async (email, otp) => {
+    const subject = 'Password Reset OTP';
+    const message = `
+        <h3>Password Reset Request</h3>
+        <p>Your OTP for password reset is:</p>
+        <h1 style="color: #2563eb; letter-spacing: 5px;">${otp}</h1>
+        <p>This OTP is valid for 10 minutes.</p>
+        <p>If you did not request this, please ignore this email.</p>
+    `;
+    await sendEmail(email, subject, message);
+};
+
+module.exports = { sendSurgeryNotification, sendOTP };

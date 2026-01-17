@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import API from '../services/api';
+import { Edit, Trash2, FileText } from 'lucide-react';
 
 const Patients = () => {
   const [patients, setPatients] = useState([]);
@@ -112,6 +113,19 @@ const Patients = () => {
     } catch (error) {
       alert('Error saving patient');
     }
+  };
+
+  const handleDelete = async (id) => {
+      if (window.confirm('Are you sure you want to delete this patient?')) {
+          try {
+              await API.delete(`/patients/${id}`);
+              fetchPatients();
+              // Replace alert with toast if available, but staying consistent with file
+              alert('Patient deleted successfully');
+          } catch (error) {
+              alert('Failed to delete patient');
+          }
+      }
   };
 
   if (loading) return <div>Loading...</div>;
@@ -281,16 +295,22 @@ const Patients = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-secondary">{patient.contactNumber}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-secondary hidden lg:table-cell">{patient.email || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
-                     <button onClick={() => handleViewHistory(patient)} className="text-blue-600 hover:text-blue-800 font-medium">
-                        {patient.medicalHistory?.length || 0} Records
+                     <button onClick={() => handleViewHistory(patient)} className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
+                        <FileText size={16} /> {patient.medicalHistory?.length || 0} Records
                      </button>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap space-x-2">
+                  <td className="px-6 py-4 whitespace-nowrap space-x-2 flex items-center">
                      <button 
                       onClick={() => handleEdit(patient)}
-                      className="text-primary hover:text-indigo-800 font-semibold"
+                      className="text-primary hover:text-indigo-800 font-semibold flex items-center gap-1"
                     >
-                      Edit
+                      <Edit size={16} /> Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(patient._id)}
+                      className="text-red-600 hover:text-red-900 font-semibold flex items-center gap-1"
+                    >
+                      <Trash2 size={16} /> Delete
                     </button>
                   </td>
                 </tr>

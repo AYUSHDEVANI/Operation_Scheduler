@@ -177,4 +177,93 @@ const verifyOTPAndChangePassword = async (req, res) => {
     }
 };
 
-module.exports = { loginUser, registerUser, getMe, updateProfile, requestOTP, verifyOTPAndChangePassword };
+// @desc    Forgot Password - Request OTP (Public)
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpires = Date.now() + 10 * 60 * 1000; // 10 Minutes
+
+        user.otp = otp;
+        user.otpExpires = otpExpires;
+        await user.save();
+
+        await sendOTP(user.email, otp);
+        logger.info(`Forgot Password OTP sent to ${user.email}`);
+
+        res.json({ message: 'OTP sent to your email' });
+    } catch (error) {
+        logger.error(`Forgot Password Error: ${error.message}`);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Verify OTP for Password Reset (Public)
+// @route   POST /api/auth/verify-reset-otp
+// @access  Public
+const verifyResetOTP = async (req, res) => {
+    const { email, otp } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.otp === otp && user.otpExpires > Date.now()) {
+            res.json({ message: 'OTP Verified' });
+        } else {
+            res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+    } catch (error) {
+        logger.error(`Verify OTP Error: ${error.message}`);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Reset Password with OTP (Public)
+// @route   POST /api/auth/reset-password
+// @access  Public
+const resetPassword = async (req, res) => {
+    const { email, otp, newPassword } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.otp === otp && user.otpExpires > Date.now()) {
+            user.password = newPassword; // Will be hashed by pre-save hook
+            user.otp = undefined;
+            user.otpExpires = undefined;
+            await user.save();
+
+            logger.info(`Password successfully reset for ${user.email}`);
+            res.json({ message: 'Password reset successfully' });
+        } else {
+            res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+    } catch (error) {
+        logger.error(`Reset Password Error: ${error.message}`);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+module.exports = { 
+    loginUser, 
+    registerUser, 
+    getMe, 
+    updateProfile, 
+    requestOTP, 
+    verifyOTPAndChangePassword,
+    forgotPassword,
+    verifyResetOTP,
+    resetPassword
+};

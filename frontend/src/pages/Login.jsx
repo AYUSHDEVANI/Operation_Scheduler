@@ -38,6 +38,12 @@ const Login = () => {
             required
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           />
+          <div className="flex justify-end">
+            <Link to="/forgot-password" className="text-sm text-primary hover:text-blue-800 transition-colors">
+              Forgot Password?
+            </Link>
+          </div>
+
           <button type="submit" className="w-full py-2 px-4 bg-primary text-surface rounded hover:brightness-110 transition-all font-semibold shadow-md">
             Sign In
           </button>

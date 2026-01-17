@@ -12,6 +12,8 @@ const Register = () => {
     e.preventDefault();
     try {
       await register(formData);
+      // Success Message as requested
+      alert("Account created successfully!\n\nNOTE: You are currently assigned as a 'User/Staff'.\n\nPlease wait for the Super Admin to assign you a specific role (Doctor/Admin) if applicable.\n\nYou can now use your account as a normal user.");
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
@@ -45,15 +47,7 @@ const Register = () => {
             required
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           />
-           <select
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-primary focus:border-primary bg-surface"
-            value={formData.role}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-          >
-            <option value="USER">User (Standard)</option>
-            <option value="DOCTOR">Doctor</option>
-            <option value="ADMIN">Admin</option>
-          </select>
+
           <button type="submit" className="w-full py-2 px-4 bg-primary text-surface rounded hover:brightness-110 transition-all font-semibold shadow-md">
             Create Account
           </button>

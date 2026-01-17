@@ -12,6 +12,7 @@ import Patients from './pages/Patients';
 import OTs from './pages/OTs';
 import SurgeryScheduler from './pages/SurgeryScheduler';
 import Reports from './pages/Reports';
+import Users from './pages/Users';
 import Resources from './pages/Resources';
 import AuditLogs from './pages/AuditLogs';
 
@@ -69,6 +70,12 @@ function App() {
              <Route path="audit-logs" element={
                 <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
                   <AuditLogs />
+                </ProtectedRoute>
+             } />
+
+             <Route path="users" element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                  <Users />
                 </ProtectedRoute>
              } />
           </Route>

@@ -61,6 +61,7 @@ app.use('/api/resources', resourceRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/surgery-tracking', surgeryTrackingRoutes);
 app.use('/api/audit-logs', require('./routes/auditRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 
 app.get('/', (req, res) => {
   res.send('API is running...');

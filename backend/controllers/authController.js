@@ -38,7 +38,12 @@ const loginUser = async (req, res) => {
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
+
+  // Force role to USER for public registration
+  // Super Admins can promote users later
+  const role = 'USER'; 
+
   try {
     const userExists = await User.findOne({ email });
 

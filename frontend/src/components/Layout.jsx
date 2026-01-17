@@ -55,7 +55,10 @@ const SidebarContent = ({ user, handleLogout, setIsMobileMenuOpen, setIsProfileM
             </>
           )}
           {user.role === 'SUPER_ADMIN' && (
-             <NavItem to="/audit-logs" icon={FileText} setIsMobileMenuOpen={setIsMobileMenuOpen} location={location}>Audit Logs</NavItem>
+             <>
+               <NavItem to="/users" icon={Users} setIsMobileMenuOpen={setIsMobileMenuOpen} location={location}>All Users</NavItem>
+               <NavItem to="/audit-logs" icon={FileText} setIsMobileMenuOpen={setIsMobileMenuOpen} location={location}>Audit Logs</NavItem>
+             </>
           )}
         </>
       )}

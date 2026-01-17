@@ -61,9 +61,18 @@ const AuditLogs = () => {
             </div>
             
             <div className="p-6 max-h-[60vh] overflow-y-auto">
-                <div className="mb-4">
-                    <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Action Type</span>
-                    <p className="font-medium text-gray-800 mt-1">{selectedLog.action}</p>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Performed By</span>
+                        <p className="font-medium text-gray-800 mt-1">
+                            {selectedLog.actor?.name || 'Unknown'}
+                            <span className="block text-xs text-gray-500 font-normal">{selectedLog.actor?.role}</span>
+                        </p>
+                    </div>
+                    <div>
+                        <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Action Type</span>
+                        <p className="font-medium text-gray-800 mt-1">{selectedLog.action}</p>
+                    </div>
                 </div>
                 
                 <div className="mb-6">

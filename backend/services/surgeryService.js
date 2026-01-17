@@ -170,5 +170,42 @@ const updateSurgeryService = async (id, data, io) => {
 module.exports = {
   checkOverlap,
   createSurgeryService,
-  updateSurgeryService
+  updateSurgeryService,
+  
+  /**
+   * Get all surgeries with filtering and pagination
+   */
+  getAllSurgeriesService: async (query, page, limit) => {
+      const count = await Surgery.countDocuments(query);
+      const surgeries = await Surgery.find(query)
+          .populate('patient')
+          .populate('doctor')
+          .populate('operationTheatre')
+          .limit(limit * 1)
+          .skip((page - 1) * limit)
+          .sort({ startDateTime: 1 });
+
+      return {
+          surgeries,
+          totalPages: Math.ceil(count / limit),
+          currentPage: Number(page),
+          totalSurgeries: count
+      };
+  },
+
+  /**
+   * Get Surgery Stats
+   */
+  getSurgeryStatsService: async () => {
+      // Use Promise.all for parallel execution - optimization!
+      const [total, completed, cancelled, scheduled, emergency] = await Promise.all([
+          Surgery.countDocuments({ isDeleted: false }),
+          Surgery.countDocuments({ status: 'Completed', isDeleted: false }),
+          Surgery.countDocuments({ status: 'Cancelled', isDeleted: false }),
+          Surgery.countDocuments({ status: 'Scheduled', isDeleted: false }),
+          Surgery.countDocuments({ priority: 'Emergency', isDeleted: false })
+      ]);
+
+      return { total, completed, cancelled, scheduled, emergency };
+  }
 };

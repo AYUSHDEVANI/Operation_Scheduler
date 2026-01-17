@@ -113,4 +113,16 @@ const sendOTP = async (email, otp) => {
     await sendEmail(email, subject, message);
 };
 
-module.exports = { sendSurgeryNotification, sendOTP };
+const sendRoleChangeNotification = async (email, name, newRole) => {
+    const subject = 'Your Account Role Has Changed';
+    const message = `
+        <h3>Role Update Notification</h3>
+        <p>Hello ${name},</p>
+        <p>Your account role has been updated by the Super Admin.</p>
+        <p>Your new role is: <strong style="color: #2563eb;">${newRole}</strong></p>
+        <p>Please log out and log back in to access your new privileges.</p>
+    `;
+    await sendEmail(email, subject, message);
+};
+
+module.exports = { sendSurgeryNotification, sendOTP, sendRoleChangeNotification };
